@@ -1,11 +1,14 @@
 'use client';
 
-import { Spin, StepProps, Steps } from 'antd';
 import { useEffect, useState } from 'react';
-import { Location, Trash, Truck, Security, Calendar, Card } from 'iconsax-react';
+import { Drawer, Spin, StepProps, Steps } from 'antd';
+import { Location, Trash, Truck, Security, Calendar, Card, ArrowLeft, ArrowRight } from 'iconsax-react';
+
 import { SkipModel } from '@/lib/types';
+
 import SkipCard from '@/components/SkipCard';
 import { determineErrorMessage } from '@/lib/utils';
+import { fetchSkips } from '@/lib/services/skip.service';
 
 const Home = () => {
     const [current, setCurrent] = useState(0);
@@ -53,19 +56,18 @@ const Home = () => {
     }
 
     useEffect(() => {
-        if (loading) return;
-
-        setLoading(true);
-        fetch('https://app.wewantwaste.co.uk/api/skips/by-location?postcode=NR32&area=Lowestoft')
-            .then(res => res.json())
-            .then(data => {
-                setLoading(false);
+        const fetch = async () => {
+            setLoading(true);
+            const { data, error } = await fetchSkips();
+            setLoading(false);
+            if (error) {
+                setError(determineErrorMessage(error));
+            } else {
                 setSkips(data);
-            })
-            .catch((err) => {
-                setLoading(false);
-                setError(determineErrorMessage(err));
-            });
+            }
+        }
+
+        fetch();
     }, []);
 
     return (
@@ -88,7 +90,7 @@ const Home = () => {
                         </div>
                     )
                     : skips.length > 0? (
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                             {
                                 skips.map((skip, index) => (
                                     <SkipCard 
@@ -107,6 +109,33 @@ const Home = () => {
                     )
                 }
             </div>
+            <Drawer
+                placement="bottom"
+                closable={false}
+                height={150}
+                open={selected !== null}
+                onClose={() => setSelected(null)}>
+                <div className="flex justify-center">
+                    <div className="w-full px-4 sm:px-0 sm:w-5/6 lg:w-2/3">
+                        <p className="text-center">Imagery and information shown throughout this website may not reflect the exact shape or size specification, colours may vary, options and/or accessories may be featured at additional cost.</p>
+                        <div className="flex justify-between items-center mt-4">
+                            <div className="flex items-center">
+                                <p className="text-md font-bold mr-2">{selected?.size} Yard Skip</p>
+                                <p className="text-2xl text-blue-700 font-bold mr-2">£{selected?.price_before_vat}</p>
+                                <p className="text-md font-bold">{selected?.hire_period_days} Day Hire</p>
+                            </div>
+                            <div className="flex">
+                                <button onClick={() => setSelected(null)} className="bg-none text-blue-700 cursor-pointer text-base font-semibold items-center flex rounded-xl px-4 py-2">
+                                    <ArrowLeft className="mr-2" color='#1447e6' size={18} /> Back
+                                </button>
+                                <button onClick={() => setSelected(null)} className="ml-2 bg-blue-700 text-white cursor-pointer text-base font-semibold items-center flex rounded-xl px-4 py-2">
+                                    Continue <ArrowRight className="ml-2" color='white' size={18} />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </Drawer>
         </div>
     );
 }
